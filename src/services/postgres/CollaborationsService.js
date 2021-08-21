@@ -32,7 +32,7 @@ class CollaborationsService {
 
     const result = await this._pool.query(query);
 
-    id (!result.rows.length) {
+    if (!result.rows.length) {
       throw new InvariantError('Kolaborasi gagal dihapus');
     }
   }
