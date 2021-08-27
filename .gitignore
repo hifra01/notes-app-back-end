@@ -3,3 +3,4 @@ package-lock.json
 .env
 .prod.env
 .idea
+src/api/uploads/file
