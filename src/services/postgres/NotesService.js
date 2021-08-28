@@ -6,9 +6,10 @@ const AuthorizationError = require('../../exceptions/AuthorizationError');
 const { mapDBToModel } = require('../../utils');
 
 class NotesService {
-  constructor(collaborationService) {
+  constructor(collaborationService, cacheService) {
     this._pool = new Pool();
     this._collaborationService = collaborationService;
+    this._cacheService = cacheService;
   }
 
   async verifyNoteOwner(id, owner) {
@@ -64,6 +65,7 @@ class NotesService {
       throw new InvariantError('Catatan gagal ditambahkan');
     }
 
+    await this._cacheService.delete(`notes:${owner}`);
     return result.rows[0].id;
   }
 
@@ -76,7 +78,11 @@ class NotesService {
       values: [owner],
     };
     const result = await this._pool.query(query);
-    return result.rows.map(mapDBToModel);
+    const mappedResult = result.rows.map(mapDBToModel);
+
+    await this._cacheService.set(`notes:${owner}`, JSON.stringify(mappedResult));
+
+    return mappedResult;
   }
 
   async getNoteById(id) {
@@ -109,6 +115,9 @@ class NotesService {
     if (!result.rows.length) {
       throw new NotFoundError('Gagal memperbarui catatan. Id tidak ditemukan');
     }
+
+    const { owner } = result.rows[0];
+    await this._cacheService.delete(`notes:${owner}`);
   }
 
   async deleteNoteById(id) {
@@ -122,6 +131,9 @@ class NotesService {
     if (!result.rows.length) {
       throw new NotFoundError('Catatan gagal dihapus. Id tidak ditemukan');
     }
+
+    const { owner } = result.rows[0];
+    await this._cacheService.delete(`notes:${owner}`);
   }
 }
 
